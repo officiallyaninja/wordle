@@ -19,7 +19,7 @@ fn main() {
     let levels = Level::get_levels();
     let mut level_index = 2;
     let level = &levels[level_index];
-    let game = game::Game::new(level);
+    let mut game = game::Game::new(level);
     let func_string = game.level.func_string;
     let mut arg_color: Vec<Color> = vec![Color::BrightBlack; level.num_args];
     let mut colors_used: u32 = 0;
@@ -46,39 +46,17 @@ fn main() {
         }
     }
     let arg_color = arg_color; // now arg_color should be immutable
-    dbg!(&arg_color);
     loop {
+        let mut values: Vec<i32> = vec![];
+
         for selected_arg_index in 0..arg_color.len() {
             clear();
             println!("{}", "HISTORY".underline());
             // println!("----------------------------------------");
             print_history(&game.history);
             println!("----------------------------------------");
-            for token in func_string.split(" ") {
-                let Some(hash_index) = token.find("#")
-            else {
-                print!("{token} ");
-                continue;
-            };
-
-                let arg_index: usize = (&token[hash_index + 1..])
-                    .trim_end_matches(")")
-                    .parse()
-                    .expect("something that isn't a number follows a hash in func_string");
-
-                let qn_mark_color = arg_color[arg_index];
-                let colored_qn_mark = match arg_index == selected_arg_index {
-                    true => "?".color(qn_mark_color).underline(),
-                    false => "?".color(qn_mark_color),
-                };
-
-                match (token.starts_with("("), token.ends_with(")")) {
-                    (true, true) => print!("({}) ", colored_qn_mark),
-                    (true, false) => print!("({} ", colored_qn_mark),
-                    (false, true) => print!("{}) ", colored_qn_mark),
-                    (false, false) => print!("{} ", colored_qn_mark),
-                }
-            } // now the funcstring should be done being printed
+            // now the funcstring should be done being printed
+            print_colored_func_string(&values, level, &arg_color, selected_arg_index);
             println!();
 
             let num: i32 = input::parse_input(
@@ -86,7 +64,9 @@ fn main() {
                 "Error, please enter an integer",
                 None,
             );
+            values.push(num);
         }
+        game.history.push((values.clone(), (level.func)(values)))
     }
 }
 
@@ -116,6 +96,40 @@ fn get_color(colors_used: u32) -> Color {
         7 => Color::BrightGreen,
         8 => Color::BrightRed,
         _ => panic!("too many colors (too many repeated args (>8))"),
+    }
+}
+
+fn print_colored_func_string(
+    values: &Vec<i32>,
+    level: &Level,
+    arg_color: &Vec<Color>,
+    selected_arg_index: usize,
+) {
+    for token in level.func_string.split(" ") {
+        let Some(hash_index) = token.find("#")
+else {
+    print!("{token} ");
+    continue;
+};
+
+        let arg_index: usize = (&token[hash_index + 1..])
+            .trim_end_matches(")")
+            .parse()
+            .expect("something that isn't a number follows a hash in func_string");
+
+        let color = arg_color[arg_index];
+
+        let colored_arg = match arg_index == selected_arg_index {
+            true => "?".color(color).underline(),
+            false => "?".color(color),
+        };
+
+        match (token.starts_with("("), token.ends_with(")")) {
+            (true, true) => print!("({}) ", colored_arg),
+            (true, false) => print!("({} ", colored_arg),
+            (false, true) => print!("{}) ", colored_arg),
+            (false, false) => print!("{} ", colored_arg),
+        }
     }
 }
 
