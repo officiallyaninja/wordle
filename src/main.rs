@@ -12,9 +12,6 @@ use std::{
 
 use colored::*;
 
-const LOWERCASE: &str = "abcdefghijklmnopqrstuvwxyz";
-const UPPERCASE: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
 
@@ -24,7 +21,7 @@ fn main() {
     let level = &levels[level_index];
     let game = game::Game::new(level);
     let func_string = game.level.func_string;
-    let mut arg_color: Vec<Color> = vec![Color::BrightBlack; func_string.split(" ").count()];
+    let mut arg_color: Vec<Color> = vec![Color::BrightBlack; level.num_args];
     let mut colors_used: u32 = 0;
 
     // assigning colors
@@ -48,38 +45,64 @@ fn main() {
             },
         }
     }
+    let arg_color = arg_color; // now arg_color should be immutable
+    dbg!(&arg_color);
     loop {
-        clear();
-        println!("{}", "HISTORY".underline());
-        // println!("----------------------------------------");
-        print_history(&game.history);
-        println!("----------------------------------------");
-        for token in func_string.split(" ") {
-            let Some(hash_index) = token.find("#")
+        for selected_arg_index in 0..arg_color.len() {
+            clear();
+            println!("{}", "HISTORY".underline());
+            // println!("----------------------------------------");
+            print_history(&game.history);
+            println!("----------------------------------------");
+            for token in func_string.split(" ") {
+                let Some(hash_index) = token.find("#")
             else {
                 print!("{token} ");
                 continue;
             };
 
-            let arg_index: usize = (&token[hash_index + 1..])
-                .trim_end_matches(")")
-                .parse()
-                .expect("something that isn't a number follows a hash in func_string");
+                let arg_index: usize = (&token[hash_index + 1..])
+                    .trim_end_matches(")")
+                    .parse()
+                    .expect("something that isn't a number follows a hash in func_string");
 
-            let colored_qn_mark = "?".color(arg_color[arg_index]);
+                let qn_mark_color = arg_color[arg_index];
+                let colored_qn_mark = match arg_index == selected_arg_index {
+                    true => "?".color(qn_mark_color).underline(),
+                    false => "?".color(qn_mark_color),
+                };
 
-            match (token.starts_with("("), token.ends_with(")")) {
-                (true, true) => print!("({}) ", colored_qn_mark),
-                (true, false) => print!("({} ", colored_qn_mark),
-                (false, true) => print!("{}) ", colored_qn_mark),
-                (false, false) => print!("{} ", colored_qn_mark),
-            }
-        } // now the funcstring should be done being printed
-        println!();
+                match (token.starts_with("("), token.ends_with(")")) {
+                    (true, true) => print!("({}) ", colored_qn_mark),
+                    (true, false) => print!("({} ", colored_qn_mark),
+                    (false, true) => print!("{}) ", colored_qn_mark),
+                    (false, false) => print!("{} ", colored_qn_mark),
+                }
+            } // now the funcstring should be done being printed
+            println!();
 
-        let _: String = input::get_string("Enter number to insert into underlined char: ");
+            let num: i32 = input::parse_input(
+                "Enter number to insert into underlined char: ",
+                "Error, please enter an integer",
+                None,
+            );
+        }
     }
 }
+
+//
+
+//
+//
+//
+//
+//   HELPER FUNCTIONS
+//
+//
+//
+//
+
+//
 
 fn get_color(colors_used: u32) -> Color {
     match colors_used {
