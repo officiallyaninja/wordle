@@ -28,7 +28,6 @@ fn main() {
     for token in func_string.split(" ") {
         let Some(hash_index) = token.find("#")
         else {
-            print!("{token} ");
             continue;
         };
 
@@ -52,7 +51,7 @@ fn main() {
         for selected_arg_index in 0..arg_color.len() {
             clear();
             println!("{}", "HISTORY".underline());
-            // println!("----------------------------------------");
+            println!("----------------------------------------");
             print_history(&game.history);
             println!("----------------------------------------");
             // now the funcstring should be done being printed
@@ -107,21 +106,30 @@ fn print_colored_func_string(
 ) {
     for token in level.func_string.split(" ") {
         let Some(hash_index) = token.find("#")
-else {
-    print!("{token} ");
-    continue;
-};
+        else {
+            print!("{token} ");
+            continue; 
+        };
 
+
+        
         let arg_index: usize = (&token[hash_index + 1..])
             .trim_end_matches(")")
             .parse()
             .expect("something that isn't a number follows a hash in func_string");
 
+
+
         let color = arg_color[arg_index];
 
+        let arg_string: String = match values.len() > arg_index {
+            true => values[arg_index].to_string(),
+            false => "?".to_owned(),
+        };
+
         let colored_arg = match arg_index == selected_arg_index {
-            true => "?".color(color).underline(),
-            false => "?".color(color),
+            true => arg_string.color(color).underline(),
+            false => arg_string.color(color),
         };
 
         match (token.starts_with("("), token.ends_with(")")) {
@@ -134,7 +142,9 @@ else {
 }
 
 fn print_history(history: &Vec<(Vec<i32>, i32)>) {
-    println!("todo")
+    for _ in history{
+        println!("todo")
+    } 
 }
 
 #[cfg(not(debug_assertions))]
