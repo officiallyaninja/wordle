@@ -24,6 +24,9 @@ fn main() {
                     get_string("what level would you like to start at (just press enter to start at beginning): ")
                     .parse::<u32>()
                     .unwrap_or(1);
+
+    println!("{}", "Instructions".underline());
+    // println!();
     
 
     for level_index in starting_level..{
