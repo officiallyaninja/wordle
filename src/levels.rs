@@ -1,6 +1,6 @@
 use std::{cmp, collections::HashSet};
 
-use colored::Color;
+use colored::{Color, Colorize};
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 
 pub enum Constraint {
@@ -10,7 +10,7 @@ pub enum Constraint {
     InRange(i32, i32),
     Brittle { index: usize, brittleness: u32 },
 }
-
+#[derive(Debug)]
 pub struct Config {
     pub unique_values: bool,
     pub unique_arguments: bool,
@@ -22,6 +22,47 @@ impl Config {
             unique_values: false,
             unique_arguments: false,
             range: None,
+        }
+    }
+
+    pub fn show_info(&self) {
+        let mut text: Vec<(String, String)> = vec![];
+        if self.unique_values {
+            text.push((
+                "Unique Variables".to_string(),
+                "all variables have unique values that are distinct from each other\n".to_string(),
+            ));
+        }
+        if self.unique_arguments {
+            text.push((
+                "Unique Arguments".to_string(),
+                "all function arguments must be distinct(you cannot use the same variable twice in the same function)\n"
+                    .to_string(),
+            ))
+        }
+        if let Some((lower, higher)) = self.range {
+            text.push((
+                "In Range".to_string(),
+                format!(
+                    "all values are between {} and {} inclusive\n",
+                    lower.to_string().green(),
+                    higher.to_string().green()
+                ),
+            ));
+        }
+
+        if !text.is_empty() {
+            println!("{}", colored::Colorize::underline("SPECIAL RULES"));
+            // println!(
+            //     "---------------------------------------------------------------------------------------------"
+            // );
+            println!();
+            for (heading, body) in text {
+                print!("{}: {}", heading.cyan(), body);
+            }
+            println!(
+                "---------------------------------------------------------------------------------------------"
+            );
         }
     }
 }
@@ -42,7 +83,7 @@ impl Level {
         num_values: usize,
         func: fn(&[i32]) -> i32,
         func_string: &'static str,
-        mut constraints: Vec<Constraint>,
+        constraints: Vec<Constraint>,
     ) -> Self {
         // finding number of args
         let mut max_num = 0;
@@ -70,6 +111,7 @@ impl Level {
                 Constraint::UniqueArguments => config.unique_arguments = true,
                 Constraint::Brittle { .. } => todo!(),
                 Constraint::InRange(lower, higher) => {
+                    assert!(lower < higher);
                     if let Some(_) = config.range {
                         panic!("error there are 2 different ranges on same level");
                     }
@@ -79,7 +121,7 @@ impl Level {
         }
 
         //finding colors
-        let mut arg_colors: Vec<Color> = vec![Color::BrightBlack; num_args];
+        let mut arg_colors: Vec<Color> = vec![Color::BrightWhite; num_args];
         let mut colors_used: u32 = 0;
         for token in func_string.split(" ") {
             let Some(hash_index) = token.find("#")

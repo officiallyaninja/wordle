@@ -1,4 +1,4 @@
-use crate::levels::{Config, Constraint, Level};
+use crate::levels::Level;
 use rand::{self, seq::SliceRandom, Rng};
 // let mut num_levels = 0;
 pub struct Game<'a> {
