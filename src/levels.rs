@@ -7,7 +7,23 @@ pub enum Constraint {
     // note, the order it's defined matters here, don't fuck with it
     UniqueValues,
     UniqueArguments,
+    InRange(i32, i32),
     Brittle { index: usize, brittleness: u32 },
+}
+
+pub struct Config {
+    pub unique_values: bool,
+    pub unique_arguments: bool,
+    pub range: Option<(i32, i32)>,
+}
+impl Config {
+    fn new() -> Self {
+        Self {
+            unique_values: false,
+            unique_arguments: false,
+            range: None,
+        }
+    }
 }
 
 pub struct Level {
@@ -16,7 +32,7 @@ pub struct Level {
     num_args: usize,
     func: fn(&[i32]) -> i32,
     func_string: &'static str,
-    constraints: HashSet<Constraint>,
+    config: Config,
     arg_colors: Vec<Color>,
 }
 
@@ -47,19 +63,18 @@ impl Level {
         //finding constrints
         let constraints: HashSet<Constraint> = HashSet::from_iter(constraints.into_iter());
 
+        let mut config = Config::new();
         for constraint in &constraints {
             match constraint {
-                Constraint::UniqueValues => {
-                    if num_values > 9 {
-                        panic!("you can't have more than 9 values if you want unique values")
-                    }
-                }
-                Constraint::UniqueArguments => {
-                    if num_args > 9 {
-                        panic!("you can't have more than 9 args if you want unique args")
-                    }
-                }
+                Constraint::UniqueValues => config.unique_values = true,
+                Constraint::UniqueArguments => config.unique_arguments = true,
                 Constraint::Brittle { .. } => todo!(),
+                Constraint::InRange(lower, higher) => {
+                    if let Some(_) = config.range {
+                        panic!("error there are 2 different ranges on same level");
+                    }
+                    config.range = Some((*lower, *higher))
+                }
             }
         }
 
@@ -92,12 +107,12 @@ impl Level {
             num_values,
             func,
             func_string,
-            constraints,
+            config,
             arg_colors,
         }
     }
 
-    pub fn get_level(index: u32) -> Level {
+    pub fn get_level(index: u32) -> Option<Level> {
         // let mut num_levels = 0;
         // let mut get_id = || {
         //     num_levels += 1;
@@ -105,18 +120,29 @@ impl Level {
         // };
 
         use Constraint::*;
-        match index {
+        let level = match index {
             ..=0 => panic!("error, level index less than 1"),
-            1 => Level::new(4, |v| v[0] + v[1], "#0 + #1", vec![UniqueValues]),
-            2 => Level::new(4, |v| v[0] - v[1], "#0 - #1", vec![UniqueValues]),
+            1 => Level::new(
+                4,
+                |v| v[0] + v[1],
+                "#0 + #1",
+                vec![UniqueValues, InRange(1, 4)],
+            ),
+            2 => Level::new(
+                4,
+                |v| v[0] - v[1],
+                "#0 - #1",
+                vec![UniqueValues, InRange(1, 4)],
+            ),
             3 => Level::new(
                 5,
                 |v| (v[0] * v[1] + v[2] - v[3]) * (v[1] - v[2]),
                 "(#0 * #1 + #2 - #3) * (#1 - #2)",
                 vec![UniqueValues, UniqueArguments],
             ),
-            _ => panic!("error, level index too big"),
-        }
+            _ => return None,
+        };
+        Some(level)
     }
 
     pub fn arg_colors(&self) -> &[Color] {
@@ -135,12 +161,12 @@ impl Level {
         self.num_args
     }
 
-    pub fn constraints(&self) -> &HashSet<Constraint> {
-        &self.constraints
-    }
-
     pub fn func(&self) -> fn(&[i32]) -> i32 {
         self.func
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 }
 

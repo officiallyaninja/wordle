@@ -1,20 +1,23 @@
-use crate::levels::{Constraint, Level};
+use crate::levels::{Config, Constraint, Level};
 use rand::{self, seq::SliceRandom, Rng};
 // let mut num_levels = 0;
 pub struct Game<'a> {
-    pub level: &'a Level,
+    level: &'a Level,
     values: Vec<i32>, // has to be i32 but really they only vary from 1-9
     known: Vec<bool>,
-    pub history: Vec<(Vec<i32>, i32)>,
+    pub history: Vec<(Vec<char>, i32)>,
 }
 impl<'a> Game<'a> {
     pub fn new(level: &'a Level) -> Self {
         let mut rng = rand::thread_rng();
         let mut values: Vec<i32> = vec![];
         let num_values = level.num_values();
+        let mut range: Vec<i32> = match level.config().range {
+            Some((lower, higher)) => (lower..=higher).collect(),
+            None => (1..10).collect(),
+        };
 
-        if level.constraints().contains(&Constraint::UniqueValues) {
-            let mut range: Vec<i32> = (0..10).collect();
+        if level.config().unique_values {
             range.shuffle(&mut rng);
 
             values = range[0..num_values].to_vec()
@@ -30,5 +33,25 @@ impl<'a> Game<'a> {
             known: vec![false; num_values],
             history: vec![],
         }
+    }
+
+    pub fn values(&self) -> &[i32] {
+        self.values.as_ref()
+    }
+
+    pub(crate) fn value_at(&self, index: usize) -> Option<&i32> {
+        self.values.get(index)
+    }
+
+    pub fn known_mut(&mut self) -> &mut Vec<bool> {
+        &mut self.known
+    }
+
+    pub fn level(&self) -> &Level {
+        self.level
+    }
+
+    pub fn known(&self) -> &[bool] {
+        self.known.as_ref()
     }
 }
