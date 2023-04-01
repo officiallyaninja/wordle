@@ -11,9 +11,9 @@ impl<'a> Game<'a> {
     pub fn new(level: &'a Level) -> Self {
         let mut rng = rand::thread_rng();
         let mut values: Vec<i32> = vec![];
-        let num_values = level.num_values;
+        let num_values = level.num_values();
 
-        if level.constraints.contains(&Constraint::UniqueValues) {
+        if level.constraints().contains(&Constraint::UniqueValues) {
             let mut range: Vec<i32> = (0..10).collect();
             range.shuffle(&mut rng);
 

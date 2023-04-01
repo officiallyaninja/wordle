@@ -2,109 +2,85 @@ mod game;
 mod input;
 mod levels;
 
+use game::Game;
+use input::parse_input;
 use levels::Level;
 use std::{
-    collections::HashMap,
     env,
-    hash::{self, Hash},
-    num::ParseIntError,
 };
 
 use colored::*;
 
+
+static ASCII_LOWER: [char; 26] = [
+    'a', 'b', 'c', 'd', 'e', 
+    'f', 'g', 'h', 'i', 'j', 
+    'k', 'l', 'm', 'n', 'o',
+    'p', 'q', 'r', 's', 't', 
+    'u', 'v', 'w', 'x', 'y', 
+    'z',
+];
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
 
-    let _: String = input::get_string("press enter");
-    let levels = Level::get_levels();
-    let mut level_index = 2;
-    let level = &levels[level_index];
+    let mut level_index = parse_input("what level do you want to enter: ", "dumbass", None);  // change later
+    let level = &Level::get_level(level_index);
     let mut game = game::Game::new(level);
-    let func_string = game.level.func_string;
-    let mut arg_color: Vec<Color> = vec![Color::BrightBlack; level.num_args];
-    let mut colors_used: u32 = 0;
+
 
     // assigning colors
-    for token in func_string.split(" ") {
-        let Some(hash_index) = token.find("#")
-        else {
-            continue;
-        };
-
-        let arg_index: usize = (&token[hash_index + 1..])
-            .trim_end_matches(")")
-            .parse()
-            .expect("something that isn't a number follows a hash in func_string");
-        match func_string.matches(token).count() {
-            0 => panic!("pattern taken from func_string doesn't exist in func_string...this feels impossible"),
-            1 => (),
-            _ => {
-                arg_color[arg_index] = get_color(colors_used);
-                colors_used += 1
-            },
-        }
-    }
-    let arg_color = arg_color; // now arg_color should be immutable
+    
+    let arg_colors = level.arg_colors(); 
     loop {
         let mut values: Vec<i32> = vec![];
 
-        for selected_arg_index in 0..arg_color.len() {
+        for selected_arg_index in 0..arg_colors.len() {
             clear();
             println!("{}", "HISTORY".underline());
             println!("----------------------------------------");
-            print_history(&game.history);
+            print_history(&game);
             println!("----------------------------------------");
             // now the funcstring should be done being printed
-            print_colored_func_string(&values, level, &arg_color, selected_arg_index);
+            print_colored_func_string(&values, level, &arg_colors, selected_arg_index);
             println!();
 
-            let num: i32 = input::parse_input(
-                "Enter number to insert into underlined char: ",
-                "Error, please enter an integer",
-                None,
-            );
+            let num: i32 = get_input(&mut game);
             values.push(num);
         }
-        game.history.push((values.clone(), (level.func)(values)))
+        let answer = (level.func())(&values);
+        game.history.push((values, answer))
     }
 }
 
-//
 
-//
-//
-//
-//
+
 //   HELPER FUNCTIONS
-//
-//
-//
-//
 
-//
 
-fn get_color(colors_used: u32) -> Color {
-    match colors_used {
-        0 => Color::Blue,
-        1 => Color::Red,
-        2 => Color::Yellow,
-        3 => Color::Green,
-        4 => Color::Cyan,
-        5 => Color::Magenta,
-        6 => Color::BrightBlue,
-        7 => Color::BrightGreen,
-        8 => Color::BrightRed,
-        _ => panic!("too many colors (too many repeated args (>8))"),
+
+/// also does checks if user enters a check input
+fn get_input(game: &mut Game) -> i32 {
+    loop {
+        let input = input::get_string("enter guess or number: ");
+        if let Ok(num) = input.parse() {
+            if 0 < num && num < 10 { 
+                return num;
+            } else {
+            println!("error number should be between 1 and 0");
+            continue;
+            }
+        } 
     }
 }
+
 
 fn print_colored_func_string(
-    values: &Vec<i32>,
+    values: &[i32],
     level: &Level,
-    arg_color: &Vec<Color>,
+    arg_color: &[Color],
     selected_arg_index: usize,
 ) {
-    for token in level.func_string.split(" ") {
+    for token in level.func_string().split(" ") {
         let Some(hash_index) = token.find("#")
         else {
             print!("{token} ");
@@ -141,10 +117,15 @@ fn print_colored_func_string(
     }
 }
 
-fn print_history(history: &Vec<(Vec<i32>, i32)>) {
-    for _ in history{
-        println!("todo")
+fn print_history(game: &Game) {
+    let history = &game.history;
+    for (values, answer) in history{
+        
+        print_colored_func_string(values, game.level, game.level.arg_colors(), game.level.num_args()+1);
+        print!(" = {}", answer);
+        println!()
     } 
+
 }
 
 #[cfg(not(debug_assertions))]
@@ -152,7 +133,7 @@ fn clear() {
     use std::process::Command;
 
     // Clear the terminal screen:
-    if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") { 
         Command::new("cls").status().unwrap();
     } else {
         Command::new("clear").status().unwrap();
