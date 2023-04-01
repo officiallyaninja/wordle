@@ -5,6 +5,7 @@ pub struct Game<'a> {
     level: &'a Level,
     values: Vec<i32>, // has to be i32 but really they only vary from 1-9
     known: Vec<bool>,
+    used_letters: Option<Vec<char>>,
     pub history: Vec<(Vec<char>, i32)>,
 }
 impl<'a> Game<'a> {
@@ -27,10 +28,17 @@ impl<'a> Game<'a> {
             }
         }
 
+        let used_letters = if level.config().unique_arguments {
+            Some(vec![])
+        } else {
+            None
+        };
+
         Self {
             level,
             values,
             known: vec![false; num_values],
+            used_letters,
             history: vec![],
         }
     }
@@ -53,5 +61,9 @@ impl<'a> Game<'a> {
 
     pub fn known(&self) -> &[bool] {
         self.known.as_ref()
+    }
+
+    pub fn used_letters_mut(&mut self) -> &mut Option<Vec<char>> {
+        &mut self.used_letters
     }
 }

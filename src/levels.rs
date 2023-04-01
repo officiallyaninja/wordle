@@ -135,11 +135,24 @@ impl Level {
                 vec![UniqueValues, InRange(1, 4)],
             ),
             3 => Level::new(
-                5,
-                |v| (v[0] * v[1] + v[2] - v[3]) * (v[1] - v[2]),
-                "(#0 * #1 + #2 - #3) * (#1 - #2)",
-                vec![UniqueValues, UniqueArguments],
+                4,
+                |v| v[0] + v[1] - v[2],
+                "#0 + #1 - #2",
+                vec![UniqueValues, UniqueArguments, InRange(1, 4)],
             ),
+            4 => Level::new(
+                4,
+                |v| v[0] * v[0] + v[1] * v[1] + v[2],
+                "#0 ^ 2 + #1 ^ 2 + #2",
+                vec![UniqueValues, InRange(1, 4)],
+            ),
+            5 => Level::new(
+                4,
+                |v| v[0] * v[1] - v[2] * v[3],
+                "#0 * #1 - #2 * #3",
+                vec![UniqueValues, InRange(1, 4)],
+            ),
+
             _ => return None,
         };
         Some(level)
@@ -171,13 +184,12 @@ impl Level {
 }
 
 /*
-Level::new(
-    get_id(),
-    num,
-    |v| //stuff,
-    "// stuff as str",
-    vec![constrains],
-),
+=> Level::new(
+                ,
+                |v| ,
+                "",
+                vec![],
+            ),
 */
 
 //helper funcs

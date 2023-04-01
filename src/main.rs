@@ -25,9 +25,18 @@ fn main() {
                     .parse::<u32>()
                     .unwrap_or(1);
 
+    clear();
+
     println!("{}", "Instructions".underline());
-    // println!();
-    
+    println!("you will be given a list of variables who's values are unknown");
+    println!("you can insert these variables into different functions to try to ascertain their values");
+    println!("type any of the available variables to insert it into the underlines locations");
+    println!("when you would like to guess the value of a variable do {{variable}}={{value}}");
+    println!("try to win with fewest wrong guesses and function evaluations");
+
+    let mut wrong_guesses:u32 = 0;
+    let mut function_evals:u32 = 0; 
+    let mut flawless_levels:u32 = 0;
 
     for level_index in starting_level..{
         // let mut level_index = 1;  // change later
@@ -36,9 +45,9 @@ fn main() {
             break;
         };
         let mut game = game::Game::new(level);
-
         get_string("press enter to start next level: ");
         
+        let mut flawless = true;
         let arg_colors = level.arg_colors(); 
         let mut prev_guess = None;
                 // while any falses are in the game.known vec
@@ -46,6 +55,10 @@ fn main() {
             let mut letters : Vec<char> = vec![];
             // let mut values: Vec<i32> = vec![];
 
+            if let Some(false) = prev_guess {
+                flawless = false;
+                wrong_guesses += 1;
+            }
             for selected_arg_index in 0..arg_colors.len() {
                 print_info(&game, prev_guess);
                 // now the funcstring should be done being printed
@@ -69,11 +82,21 @@ fn main() {
             }
             let values = letters_to_values(&letters, game.values());
             let answer = (level.func())(&values);
-            game.history.push((letters, answer))
+            game.history.push((letters, answer));
+            function_evals += 1;
         }
         println!("you did it! you win!");
+        flawless_levels += if flawless {1} else {0}; 
     }
+    clear();
     println!("Congratulations! you beat the game!");
+    println!("you beat {} levels without any wrong guesses", flawless_levels.to_string().green());
+    if starting_level > 1 {
+        println!("(but you also skipped {} levels)", (starting_level - 1).to_string().red())
+    };
+    println!("you made {} function evaluations", function_evals.to_string().blue());
+    println!("you made a total of {} wrong guesses", wrong_guesses.to_string().red());
+
     get_string("press enter to close game:");
 }
 
@@ -127,14 +150,20 @@ fn get_input(game: &mut Game) -> UserInput {
             },
             None => {
                 if let Ok(letter) = input.parse::<char>(){
-
+  
                         match char_to_index(letter) {
                             Some(index) if index < game.level().num_values() 
-                                                    => return UserInput::Letter(letter),
+                                                    => {
+                            if let Some(used_letters) = game.used_letters_mut() {
+                                if used_letters.contains(&letter) {
+                                    println!("error: variable already used")
+                            } 
+                        }   return UserInput::Letter(letter)
+                                                    },
                             Some(_) => println!("error: this letter is not in this level"),
                             None => println!("error: this is not a letter")
                         }
-                } else {
+                } else { 
                     println!("error: that's not valid letter");
                 }
             },
