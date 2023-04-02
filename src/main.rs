@@ -4,9 +4,9 @@ mod levels;
 
 use crate::{input::get_string, levels::Level};
 use colored::*;
-use core::num;
+
 use game::Game;
-use std::{env, io::Chain, iter::zip};
+use std::{env, iter::zip};
 
 static ASCII_LOWER: [char; 26] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
@@ -210,6 +210,7 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                     for letter in input.chars() {
                         match char_to_index(letter) {
                             Some(index) if index < game.level().num_values() => {
+                                // if the level requires unique arguments
                                 if let Some(used_letters) = game.used_letters_mut() {
                                     if used_letters.contains(&letter) {
                                         println!(
@@ -305,7 +306,7 @@ fn print_colored_func_string(letters: &[char], game: &Game, selected_arg_index: 
         print!("{}", token[..hash_index].to_string());
         print!("{}", colored_arg);
         print!("{}", token[hash_index + num_digits + 1..].to_string());
-        print!(" ")
+        print!(" ");
     }
 }
 
@@ -332,7 +333,6 @@ fn print_info(game: &Game, prev_guess: Option<bool>) {
     }
     println!("---------------------------------------------------------------------------------------------");
     println!("{}", "HISTORY".underline());
-    // println!("---------------------------------------------------------------------------------------------");
     println!();
     print_history(game);
     println!("---------------------------------------------------------------------------------------------");
@@ -345,19 +345,32 @@ fn print_info(game: &Game, prev_guess: Option<bool>) {
 }
 
 #[cfg(not(debug_assertions))]
+#[cfg(target_os = "windows")]
+fn clear() {
+    use clearscreen::ClearScreen;
+
+    ClearScreen::default()
+        .clear()
+        .expect("failed to clear the screen");
+}
+
+#[cfg(not(debug_assertions))]
+#[cfg(target_os = "linux")]
 fn clear() {
     use std::process::Command;
-
-    // Clear the terminal screen:
-    if cfg!(target_os = "windows") {
-        Command::new("cls").status().unwrap();
-    } else {
-        Command::new("clear").status().unwrap();
-    };
+    Command::new("clear").status().unwrap();
 }
+
 #[cfg(debug_assertions)]
 fn clear() {
     println!();
     println!("cleared screen");
     println!();
 }
+
+// // Clear the terminal screen:
+// if cfg!(target_os = "windows") {
+//     Command::new("cls").status().unwrap();
+// } else {
+//     Command::new("clear").status().unwrap();
+// };
