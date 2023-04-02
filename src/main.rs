@@ -48,7 +48,7 @@ fn main() {
         get_string("press enter to start next level: ");
 
         let mut flawless = true;
-        let arg_colors = level.arg_colors();
+        // let arg_colors = level.arg_colors();
         let mut prev_guess = None;
         // while any falses are in the game.known vec
         'gameloop: while game.known().iter().any(|&b| !b) {
@@ -62,14 +62,10 @@ fn main() {
             if let Some(used_letters) = game.used_letters_mut() {
                 used_letters.clear();
             }
-            for selected_arg_index in 0..arg_colors.len() {
-                // //todo remove debug
-                // println!("{}", letters.len().to_string().red());
-                // println!("{:?}", letters);
-                // if selected_arg_index < letters.len() {
-                //     println!("skipping");
-                //     continue;
-                // }
+            for selected_arg_index in 0..level.num_args() {
+                if selected_arg_index < letters.len() {
+                    continue;
+                }
                 print_info(&game, prev_guess);
                 // now the funcstring should be done being printed
                 print_colored_func_string(&letters, &game, selected_arg_index);
@@ -87,12 +83,11 @@ fn main() {
 
                 for letter in input {
                     letters.push(letter);
-                    println!("{:?}", letters)
                 }
 
-                // if letters.len() == level.num_args() {
-                //     break;
-                // }
+                if letters.len() == level.num_args() {
+                    break;
+                }
             }
             let values = letters_to_values(&letters, game.values());
             let answer = (level.func())(&values);
@@ -159,7 +154,7 @@ enum UserInput {
 }
 
 fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
-    loop {
+    'main: loop {
         let input = input::get_string("enter guess or number: ")
             .split_whitespace()
             .collect::<String>();
@@ -210,7 +205,7 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                 // input is not a single letter
                 } else {
                     // TODO: Fix this clusterfuck
-                    continue;
+                    // continue;
                     let mut checked_so_far = vec![];
                     for letter in input.chars() {
                         match char_to_index(letter) {
@@ -220,18 +215,24 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                                         println!(
                                             "error: input contains variable that was already used"
                                         );
-                                        continue;
+                                        continue 'main;
                                     } else if checked_so_far.contains(&letter) {
                                         println!("error: can't use the same variable twice");
-                                        continue;
-                                    } else {
-                                        checked_so_far.push(letter)
+                                        continue 'main;
                                     }
                                 }
+
+                                checked_so_far.push(letter)
                             }
-                            Some(_) => println!("error: used aletter that is not in this level"),
+                            Some(_) => {
+                                println!("error: used a letter that is not in this level");
+                                continue 'main;
+                            }
                             None => {
-                                println!("error: contains character that is not a lowercase letter")
+                                println!(
+                                    "error: contains character that is not a lowercase letter"
+                                );
+                                continue 'main;
                             }
                         }
                     }
@@ -243,6 +244,10 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                         );
                         continue;
                     }
+                    if let Some(used_letters) = game.used_letters_mut() {
+                        used_letters.append(&mut checked_so_far.clone())
+                    }
+                    assert!(!checked_so_far.is_empty());
                     return UserInput::ManyLetters(checked_so_far);
                 }
             }
