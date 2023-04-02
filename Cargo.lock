@@ -31,6 +31,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcd"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c21a76e102bba7724d661dbbba5e483ec0707088be6a01cf3879229e75da4d9f"
+
+[[package]]
 name = "getrandom"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -131,5 +137,6 @@ name = "wordle"
 version = "0.1.0"
 dependencies = [
  "colored",
+ "gcd",
  "rand",
 ]

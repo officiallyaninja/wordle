@@ -1,6 +1,6 @@
-use std::{cmp, collections::HashSet};
-
 use colored::{Color, Colorize};
+use gcd::Gcd;
+use std::{cmp, collections::HashSet};
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 
 pub enum Constraint {
@@ -8,7 +8,7 @@ pub enum Constraint {
     UniqueValues,
     UniqueArguments,
     InRange(i32, i32),
-    Brittle { index: usize, brittleness: u32 },
+    // Brittle { index: usize, brittleness: u32 },
 }
 #[derive(Debug)]
 pub struct Config {
@@ -52,10 +52,7 @@ impl Config {
         }
 
         if !text.is_empty() {
-            println!("{}", colored::Colorize::underline("SPECIAL RULES"));
-            // println!(
-            //     "---------------------------------------------------------------------------------------------"
-            // );
+            println!("{}", "SPECIAL RULES".underline());
             println!();
             for (heading, body) in text {
                 print!("{}: {}", heading.cyan(), body);
@@ -94,8 +91,8 @@ impl Level {
                             next(). // gets the number after the #
                             expect("there is a hash without anything after it").
                             trim_end_matches(')').
-                            parse().
-                            expect("something that isn't a number follows the hash");
+                            trim_end_matches(',').
+                            parse().expect("something that isn't a number follows the hash");
             max_num = cmp::max(num, max_num);
         }
         let num_args = max_num + 1; // this is the number of args
@@ -109,10 +106,9 @@ impl Level {
             match constraint {
                 Constraint::UniqueValues => config.unique_values = true,
                 Constraint::UniqueArguments => config.unique_arguments = true,
-                Constraint::Brittle { .. } => todo!(),
                 Constraint::InRange(lower, higher) => {
                     assert!(lower < higher);
-                    if let Some(_) = config.range {
+                    if config.range.is_some() {
                         panic!("error there are 2 different ranges on same level");
                     }
                     config.range = Some((*lower, *higher))
@@ -123,14 +119,15 @@ impl Level {
         //finding colors
         let mut arg_colors: Vec<Color> = vec![Color::BrightWhite; num_args];
         let mut colors_used: u32 = 0;
-        for token in func_string.split(" ") {
-            let Some(hash_index) = token.find("#")
+        for token in func_string.split(' ') {
+            let Some(hash_index) = token.find('#')
             else {
                 continue;
             };
 
-            let arg_index: usize = (&token[hash_index + 1..])
-                .trim_end_matches(")")
+            let arg_index: usize = (token[hash_index + 1..])
+                .trim_end_matches(')')
+                .trim_end_matches(',')
                 .parse()
                 .expect("something that isn't a number follows a hash in func_string");
             match func_string.matches(token).count() {
@@ -194,6 +191,16 @@ impl Level {
                 "#0 * #1 - #2 * #3",
                 vec![UniqueValues, InRange(1, 4)],
             ),
+            6 => Level::new(
+                5,
+                |v| {
+                    (v[0] * v[1] * v[2])
+                        .checked_sub_unsigned(v[3].unsigned_abs().gcd(v[4].unsigned_abs()))
+                        .expect("how the fuck did you overflow")
+                },
+                "#0 * #1 * #2 - gcd(#3, #4)",
+                vec![UniqueValues, InRange(1, 5)],
+            ),
 
             _ => return None,
         };
@@ -225,6 +232,26 @@ impl Level {
     }
 }
 
+#[cfg(test)]
+impl Level {
+    fn verify_config(&self) {
+        let (lower, higher) = self.config().range.unwrap_or((1, 9));
+
+        assert!(lower < higher);
+        if self.config().unique_values {
+            let max_num_unique = higher - lower + 1;
+            assert!(self.num_values <= max_num_unique.try_into().unwrap())
+        }
+        if self.config().unique_arguments {
+            assert!(self.num_args() <= self.num_values())
+        }
+    }
+
+    fn all_levels() -> impl Iterator<Item = Self> {
+        (1..).map_while(|idx| Level::get_level(idx))
+    }
+}
+
 /*
 => Level::new(
                 ,
@@ -248,5 +275,25 @@ fn get_color(colors_used: u32) -> Color {
         7 => Color::BrightGreen,
         8 => Color::BrightRed,
         _ => panic!("too many colors (too many repeated args (>8))"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Level;
+
+    #[test]
+    fn verify_levels() {
+        let mut num = 0;
+        for level in Level::all_levels() {
+            println!("{}", num);
+            level.verify_config();
+            num += 1;
+        }
+    }
+
+    #[test]
+    fn verify_num_levels() {
+        assert!(Level::all_levels().count() == 6)
     }
 }
