@@ -1,5 +1,5 @@
 use crate::levels::Level;
-use rand::{self, seq::SliceRandom, Rng};
+use rand::{self, seq::SliceRandom};
 // let mut num_levels = 0;
 pub struct Game<'a> {
     level: &'a Level,
@@ -11,22 +11,15 @@ pub struct Game<'a> {
 impl<'a> Game<'a> {
     pub fn new(level: &'a Level) -> Self {
         let mut rng = rand::thread_rng();
-        let mut values: Vec<i32> = vec![];
         let num_values = level.num_values();
         let mut range: Vec<i32> = match level.config().range {
             Some((lower, higher)) => (lower..=higher).collect(),
             None => (1..10).collect(),
         };
 
-        if level.config().unique_values {
-            range.shuffle(&mut rng);
+        range.shuffle(&mut rng);
 
-            values = range[0..num_values].to_vec()
-        } else {
-            for _ in 0..num_values {
-                values.push(rng.gen_range(1..10)) //generates values from 1-10
-            }
-        }
+        let values = range[0..num_values].to_vec();
 
         let used_letters = if level.config().unique_arguments {
             Some(vec![])

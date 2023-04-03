@@ -3,23 +3,21 @@ use gcd::Gcd;
 use std::{cmp, collections::HashSet};
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
 
-pub enum Constraint {
+enum Constraint {
     // note, the order it's defined matters here, don't fuck with it
-    UniqueValues,
     UniqueArguments,
     InRange(i32, i32),
     // Brittle { index: usize, brittleness: u32 },
 }
 #[derive(Debug)]
 pub struct Config {
-    pub unique_values: bool,
+    // pub unique_values: bool,
     pub unique_arguments: bool,
     pub range: Option<(i32, i32)>,
 }
 impl Config {
     fn new() -> Self {
         Self {
-            unique_values: false,
             unique_arguments: false,
             range: None,
         }
@@ -27,12 +25,12 @@ impl Config {
 
     pub fn show_info(&self) {
         let mut text: Vec<(String, String)> = vec![];
-        if self.unique_values {
-            text.push((
-                "Unique Variables".to_string(),
-                "all variables have unique values that are distinct from each other\n".to_string(),
-            ));
-        }
+
+        text.push((
+            "Unique Variables".to_string(),
+            "all variables have unique values that are distinct from each other\n".to_string(),
+        ));
+
         if self.unique_arguments {
             text.push((
                 "Unique Arguments".to_string(),
@@ -40,16 +38,15 @@ impl Config {
                     .to_string(),
             ))
         }
-        if let Some((lower, higher)) = self.range {
-            text.push((
-                "In Range".to_string(),
-                format!(
-                    "all values are between {} and {} inclusive\n",
-                    lower.to_string().green(),
-                    higher.to_string().green()
-                ),
-            ));
-        }
+        let (lower, higher) = self.range.unwrap_or((1, 9));
+        text.push((
+            "In Range".to_string(),
+            format!(
+                "all values are between {} and {} inclusive\n",
+                lower.to_string().green(),
+                higher.to_string().green()
+            ),
+        ));
 
         if !text.is_empty() {
             println!("{}", "SPECIAL RULES".underline());
@@ -104,7 +101,7 @@ impl Level {
         let mut config = Config::new();
         for constraint in &constraints {
             match constraint {
-                Constraint::UniqueValues => config.unique_values = true,
+                // Constraint::UniqueValues => config.unique_values = true,
                 Constraint::UniqueArguments => config.unique_arguments = true,
                 Constraint::InRange(lower, higher) => {
                     assert!(lower < higher);
@@ -161,35 +158,25 @@ impl Level {
         use Constraint::*;
         let level = match index {
             ..=0 => panic!("error, level index less than 1"),
-            1 => Level::new(
-                4,
-                |v| v[0] + v[1],
-                "#0 + #1",
-                vec![UniqueValues, InRange(1, 4)],
-            ),
-            2 => Level::new(
-                4,
-                |v| v[0] - v[1],
-                "#0 - #1",
-                vec![UniqueValues, InRange(1, 4)],
-            ),
+            1 => Level::new(4, |v| v[0] + v[1], "#0 + #1", vec![InRange(1, 4)]),
+            2 => Level::new(4, |v| v[0] - v[1], "#0 - #1", vec![InRange(1, 4)]),
             3 => Level::new(
                 4,
                 |v| v[0] + v[1] - v[2],
                 "#0 + #1 - #2",
-                vec![UniqueValues, UniqueArguments, InRange(1, 4)],
+                vec![UniqueArguments, InRange(1, 4)],
             ),
             4 => Level::new(
                 4,
                 |v| v[0] * v[0] + v[1] * v[1] + v[2],
                 "#0 ^ 2 + #1 ^ 2 + #2",
-                vec![UniqueValues, InRange(1, 4)],
+                vec![InRange(1, 4)],
             ),
             5 => Level::new(
                 4,
                 |v| v[0] * v[1] - v[2] * v[3],
                 "#0 * #1 - #2 * #3",
-                vec![UniqueValues, InRange(1, 4)],
+                vec![InRange(1, 4)],
             ),
             6 => Level::new(
                 5,
@@ -199,7 +186,43 @@ impl Level {
                         .expect("how the fuck did you overflow")
                 },
                 "#0 * #1 * #2 - gcd(#3, #4)",
-                vec![UniqueValues, InRange(1, 5)],
+                vec![InRange(1, 5)],
+            ),
+            7 => Level::new(
+                2,
+                |v| 2 * v[0] * v[0] - 7 * v[0] + 4,
+                "2 * #0 ^ 2 - 7 * #0 + 4",
+                vec![InRange(1, 2)],
+            ),
+            8 => Level::new(
+                4,
+                |v| 2 * v[0] + 3 * v[1] - 4 * v[2],
+                "2 * #0 + 3 * #1 - 4 * #2",
+                vec![UniqueArguments, InRange(1, 4)],
+            ),
+            9 => Level::new(
+                6,
+                |v| (v[0] * v[1] * v[2]) % 10,
+                "(#0 * #1 * #2) % 10",
+                vec![UniqueArguments, InRange(2, 7)],
+            ),
+            10 => Level::new(
+                5,
+                |v| ((v[0] * v[1] * v[2]) % 10) + v[3],
+                "((#0 * #1 * #2) % 10) + #3",
+                vec![UniqueArguments, InRange(1, 5)],
+            ),
+            11 => Level::new(
+                5,
+                |v| 2 * v[0] * v[0] - 7 * v[0] + 4 + v[1],
+                "2 * #0 ^ 2 - 7 * #0 + 4 + #1",
+                vec![UniqueArguments, InRange(1, 5)],
+            ),
+            12 => Level::new(
+                5,
+                |v| v[0] * v[1].max(v[2]) + v[3] * (v[4] % 2),
+                "#0 * max(#1, #2) + #3 * (#4 % 2)",
+                vec![UniqueArguments, InRange(1, 5)],
             ),
 
             _ => return None,
@@ -238,10 +261,10 @@ impl Level {
         let (lower, higher) = self.config().range.unwrap_or((1, 9));
 
         assert!(lower < higher);
-        if self.config().unique_values {
-            let max_num_unique = higher - lower + 1;
-            assert!(self.num_values <= max_num_unique.try_into().unwrap())
-        }
+
+        let max_num_unique = higher - lower + 1;
+        assert!(self.num_values <= max_num_unique.try_into().unwrap());
+
         if self.config().unique_arguments {
             assert!(self.num_args() <= self.num_values())
         }

@@ -66,7 +66,7 @@ fn main() {
                 if selected_arg_index < letters.len() {
                     continue;
                 }
-                print_info(&game, prev_guess);
+                print_info(&game, prev_guess.take());
                 // now the funcstring should be done being printed
                 print_colored_func_string(&letters, &game, selected_arg_index);
                 println!();
@@ -159,6 +159,11 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
             .split_whitespace()
             .collect::<String>();
 
+        if input.is_empty() {
+            println!("please type some input");
+            continue;
+        }
+
         match input.split_once('=') {
             Some((var, value)) => {
                 let (Ok(c), Ok(value)) = (var.parse::<char>(), value.parse::<i32>())
@@ -168,7 +173,7 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                 };
                 let Some(value_index) = char_to_index(c)
                 else {
-                    println!("Error: character used not a letter");
+                    println!("Error: character used not a lowercase letter");
                     continue;
                 };
                 let Some(&true_value) =  game.value_at(value_index)
@@ -176,6 +181,12 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                     println!("Error: letter not in game");
                     continue;
                 };
+                let (lower, higher) = game.level().config().range.unwrap_or((1, 9));
+                if value > higher || value < lower {
+                    println!("Error: guessed value not in game");
+                    continue;
+                }
+
                 if true_value == value {
                     game.known_mut()[value_index] = true;
                     return UserInput::Guess(true);
@@ -204,8 +215,6 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                     }
                 // input is not a single letter
                 } else {
-                    // TODO: Fix this clusterfuck
-                    // continue;
                     let mut checked_so_far = vec![];
                     for letter in input.chars() {
                         match char_to_index(letter) {
@@ -248,7 +257,7 @@ fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
                     if let Some(used_letters) = game.used_letters_mut() {
                         used_letters.append(&mut checked_so_far.clone())
                     }
-                    assert!(!checked_so_far.is_empty());
+                    // assert!(!checked_so_far.is_empty());
                     return UserInput::ManyLetters(checked_so_far);
                 }
             }
