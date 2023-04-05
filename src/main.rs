@@ -30,8 +30,6 @@ fn main() {
     println!("type any of the available variables to insert it into the underlines locations");
     println!("when you would like to guess the value of a variable do {{variable}}={{value}}");
     println!("try to win with fewest wrong guesses and function evaluations");
-    println!("(note: if not otherwise specified, all variables will have values between 1 and 9 inclusive");
-    println!("(second note: once you beat the game don't just spam enter or else the game will close and you won't get to see your final score)");
     println!();
 
     let mut wrong_guesses: u32 = 0;
@@ -155,7 +153,7 @@ enum UserInput {
 
 fn get_input(game: &mut Game, num_letters_used_so_far: usize) -> UserInput {
     'main: loop {
-        let input = input::get_string("enter guess or number: ")
+        let input = input::get_string("enter guess or variable: ")
             .split_whitespace()
             .collect::<String>();
 
